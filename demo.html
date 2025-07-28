@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediReach Demo - Hackathon Presentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .demo-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .demo-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .demo-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .demo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .demo-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .demo-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .demo-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .demo-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .problem-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .problem-section h2 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .problem-list {
+            list-style: none;
+        }
+
+        .problem-list li {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .problem-list li::before {
+            content: '⚠️';
+            position: absolute;
+            left: 0;
+        }
+
+        .solution-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .solution-section h2 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .solution-list {
+            list-style: none;
+        }
+
+        .solution-list li {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .solution-list li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+        }
+
+        .cta-section {
+            text-align: center;
+            color: white;
+        }
+
+        .cta-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .cta-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .cta-btn.secondary {
+            background: transparent;
+            border: 2px solid white;
+        }
+
+        .cta-btn.secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .demo-header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-btn {
+                display: block;
+                margin: 1rem auto;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🏥 MediReach Demo</h1>
+            <p>Your Nearby Medical Access in Emergencies</p>
+        </div>
+
+        <div class="problem-section">
+            <h2>🚨 The Problem</h2>
+            <ul class="problem-list">
+                <li><strong>Time-critical situations:</strong> Every minute counts in medical emergencies</li>
+                <li><strong>Traffic congestion:</strong> Ambulances often get stuck in traffic, delaying critical care</li>
+                <li><strong>Information fragmentation:</strong> No single platform for hospital info, appointments, and transport</li>
+                <li><strong>Accessibility issues:</strong> Difficulty finding nearby medical facilities quickly</li>
+                <li><strong>Transport alternatives:</strong> Limited options when ambulances are unavailable</li>
+            </ul>
+        </div>
+
+        <div class="solution-section">
+            <h2>💡 Our Solution</h2>
+            <ul class="solution-list">
+                <li><strong>Hospital Discovery:</strong> Find nearby hospitals within 5-8 km radius</li>
+                <li><strong>Doctor Information:</strong> Browse available doctors and their specializations</li>
+                <li><strong>Appointment Booking:</strong> Easy online appointment scheduling</li>
+                <li><strong>Emergency Assistance:</strong> Quick access to nearest emergency hospitals</li>
+                <li><strong>Transport Integration:</strong> Alternative transport options (Ola, Uber, Rapido)</li>
+            </ul>
+        </div>
+
+        <div class="demo-grid">
+            <div class="demo-card">
+                <div class="demo-icon">
+                    <i class="fas fa-hospital"></i>
+                </div>
+                <h3>Hospital Search</h3>
+                <p>Find nearby hospitals with detailed information, ratings, and available doctors. Location-based search for quick access.</p>
+                <a href="index.html#hospitals" class="demo-btn">Try Hospital Search</a>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <h3>Appointment Booking</h3>
+                <p>Easy appointment scheduling with hospital and doctor selection. Instant confirmation with appointment ID.</p>
+                <a href="index.html#appointment" class="demo-btn">Book Appointment</a>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-icon">
+                    <i class="fas fa-ambulance"></i>
+                </div>
+                <h3>Emergency Help</h3>
+                <p>One-click emergency assistance showing nearest hospitals, direct calling, and quick directions.</p>
+                <a href="index.html#emergency" class="demo-btn">Emergency Help</a>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-icon">
+                    <i class="fas fa-car"></i>
+                </div>
+                <h3>Transport Services</h3>
+                <p>Alternative transport options when ambulances are stuck. Direct integration with Ola, Uber, and Rapido.</p>
+                <a href="index.html#transport" class="demo-btn">Transport Options</a>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Ready to Experience MediReach?</h2>
+            <p style="margin-bottom: 2rem; font-size: 1.1rem;">Click below to explore the full website</p>
+            <a href="index.html" class="cta-btn">
+                <i class="fas fa-rocket"></i> Launch Full Website
+            </a>
+            <a href="README.md" class="cta-btn secondary">
+                <i class="fas fa-file-alt"></i> View Documentation
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactive effects
+        document.querySelectorAll('.demo-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Add smooth scrolling for demo buttons
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

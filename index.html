@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApnaDr - Your Nearby Medical Access in Emergencies</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-heartbeat"></i>
+                <span>ApnaDr</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#home" class="nav-link active">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#hospitals" class="nav-link">Find Hospital</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#appointment" class="nav-link">Book Appointment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#emergency" class="nav-link">Emergency</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#transport" class="nav-link">Transport</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>Your Nearby Medical Access in Emergencies</h1>
+                <p>Find hospitals, book appointments, and get emergency transport assistance - all in one place.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="scrollToSection('hospitals')">
+                        <i class="fas fa-hospital"></i> Find Hospitals
+                    </button>
+                    <button class="btn btn-secondary" onclick="scrollToSection('emergency')">
+                        <i class="fas fa-ambulance"></i> Emergency Help
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <i class="fas fa-user-md"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hospitals Section -->
+    <section id="hospitals" class="hospitals-section">
+        <div class="container">
+            <h2>Nearby Hospitals</h2>
+            <div class="search-container">
+                <input type="text" id="hospitalSearch" placeholder="Enter city or area (e.g., Hyderabad, Warangal, Jubilee Hills)" class="search-input">
+                <button onclick="findNearbyHospitals()" class="search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button id="locationBtn" class="btn btn-secondary">
+                    <i class="fas fa-location-arrow"></i> Use My Location
+                </button>
+            </div>
+            <div class="hospitals-grid" id="hospitalList">
+                <!-- Hospitals will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Appointment Section -->
+    <section id="appointment" class="appointment-section">
+        <div class="container">
+            <h2>Book Appointment</h2>
+            <div class="appointment-container">
+                <form id="appointmentForm" class="appointment-form">
+                    <div class="form-group">
+                        <label for="patientName">Full Name</label>
+                        <input type="text" id="patientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientPhone">Phone Number</label>
+                        <input type="tel" id="patientPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientEmail">Email Address (Optional)</label>
+                        <input type="email" id="patientEmail" placeholder="For appointment confirmation">
+                    </div>
+                    <div class="form-group">
+                        <label for="hospitalSelect">Select Hospital</label>
+                        <select id="hospitalSelect" required>
+                            <option value="">Choose a hospital</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="doctorSelect">Select Doctor</label>
+                        <select id="doctorSelect" required>
+                            <option value="">Choose a doctor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentDate">Preferred Date</label>
+                        <input type="date" id="appointmentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentTime">Preferred Time</label>
+                        <input type="time" id="appointmentTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="symptoms">Symptoms/Reason</label>
+                        <textarea id="symptoms" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Book Appointment</button>
+                </form>
+                <div class="appointment-info">
+                    <h3>Why Choose MediReach?</h3>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Quick appointment booking</li>
+                        <li><i class="fas fa-check"></i> Verified doctors and hospitals</li>
+                        <li><i class="fas fa-check"></i> Emergency assistance</li>
+                        <li><i class="fas fa-check"></i> Transport integration</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Emergency Section -->
+    <section id="emergency" class="emergency-section">
+        <div class="container">
+            <h2>Emergency Assistance</h2>
+            <div class="emergency-alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Need Immediate Help?</h3>
+                <p>We'll find the nearest hospitals and transport options for you.</p>
+                <button onclick="handleEmergency()" class="btn btn-emergency">
+                    <i class="fas fa-ambulance"></i> Get Emergency Help
+                </button>
+            </div>
+            <div class="emergency-hospitals" id="emergencyHospitals">
+                <!-- Emergency hospitals will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Transport Section -->
+    <section id="transport" class="transport-section">
+        <div class="container">
+            <h2>Transport Services</h2>
+            <p class="section-subtitle">Get quick transport to hospitals when ambulances are stuck in traffic</p>
+            <div class="transport-grid">
+                <div class="transport-card">
+                    <div class="transport-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h3>Ola</h3>
+                    <p>Quick ride to hospitals</p>
+                    <button onclick="openTransport('ola')" class="btn btn-transport">
+                        Book Ola
+                    </button>
+                </div>
+                <div class="transport-card">
+                    <div class="transport-icon">
+                        <i class="fas fa-car-side"></i>
+                    </div>
+                    <h3>Uber</h3>
+                    <p>Reliable transport service</p>
+                    <button onclick="openTransport('uber')" class="btn btn-transport">
+                        Book Uber
+                    </button>
+                </div>
+                <div class="transport-card">
+                    <div class="transport-icon">
+                        <i class="fas fa-motorcycle"></i>
+                    </div>
+                    <h3>Rapido</h3>
+                    <p>Fast bike rides</p>
+                    <button onclick="openTransport('rapido')" class="btn btn-transport">
+                        Book Rapido
+                    </button>
+                </div>
+                <div class="transport-card">
+                    <div class="transport-icon">
+                        <i class="fas fa-ambulance"></i>
+                    </div>
+                    <h3>Ambulance</h3>
+                    <p>Emergency medical transport</p>
+                    <button onclick="callAmbulance()" class="btn btn-transport emergency">
+                        Call Ambulance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>ApnaDr</h3>
+                    <p>Your trusted partner for medical emergencies and healthcare access.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#hospitals">Find Hospital</a></li>
+                        <li><a href="#appointment">Book Appointment</a></li>
+                        <li><a href="#emergency">Emergency</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Emergency Numbers</h4>
+                    <ul>
+                        <li>Ambulance: 108</li>
+                        <li>Police: 100</li>
+                        <li>Fire: 101</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>Email: info@medireach.com</p>
+                    <p>Phone: +91 98765 43210</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 ApnaDr. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for Appointment Confirmation -->
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-body">
+                <i class="fas fa-check-circle success-icon"></i>
+                <h3>Appointment Booked Successfully!</h3>
+                <div id="appointmentDetails"></div>
+                <button onclick="closeModal()" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Modal -->
+    <div id="emergencyModal" class="modal">
+        <div class="modal-content emergency-modal">
+            <span class="close">&times;</span>
+            <div class="modal-body">
+                <i class="fas fa-exclamation-triangle emergency-icon"></i>
+                <h3>Emergency Assistance</h3>
+                <div id="emergencyDetails"></div>
+                <div class="emergency-actions">
+                    <button onclick="callEmergency()" class="btn btn-emergency">
+                        <i class="fas fa-phone"></i> Call Emergency
+                    </button>
+                    <button onclick="getDirections()" class="btn btn-secondary">
+                        <i class="fas fa-map-marker-alt"></i> Get Directions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
