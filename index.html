@@ -237,7 +237,7 @@
 
     <div id="appointmentModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">×</span>
+            <span class="close" onclick="closeModal()">&times;</span>
             <div class="modal-body">
                 <i class="fas fa-check-circle success-icon"></i>
                 <h3>Appointment Booked Successfully!</h3>
@@ -249,7 +249,7 @@
 
     <div id="emergencyModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">×</span>
+            <span class="close" onclick="closeModal()">&times;</span>
             <div class="modal-body">
                 <i class="fas fa-exclamation-triangle emergency-icon"></i>
                 <h3>Emergency Assistance</h3>
@@ -265,9 +265,10 @@
             </div>
         </div>
     </div>
-    
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVGEKOBFDjiPrbrx6ILFPUIeeF_Sh4kjQ&callback=initMap"></script>
-    <script src="script.js"></script>
 
+    <script src="script.js"></script>
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?AIzaSyDVGEKOBFDjiPrbrx6ILFPUIeeF_Sh4kjQ&callback=initMap">
+    </script>
 </body>
 </html>
