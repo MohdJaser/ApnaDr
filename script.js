@@ -6,6 +6,9 @@ let currentLocation = null;
 let selectedHospital = null;
 let hospitals = [];
 let doctors = [];
+let map;
+let markers = [];
+let infoWindow;
 
 // API Functions
 async function fetchHospitals(city = '', area = '') {
@@ -15,10 +18,10 @@ async function fetchHospitals(city = '', area = '') {
         if (city) params.append('city', city);
         if (area) params.append('area', area);
         if (params.toString()) url += '?' + params.toString();
-        
+
         const response = await fetch(url);
         const result = await response.json();
-        
+
         if (result.success) {
             return result.data;
         } else {
@@ -36,7 +39,7 @@ async function fetchNearbyHospitals(lat, lng, radius = 10) {
         const url = `${API_BASE_URL}/hospitals/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
         const response = await fetch(url);
         const result = await response.json();
-        
+
         if (result.success) {
             return result.data;
         } else {
@@ -53,7 +56,7 @@ async function fetchDoctorsByHospital(hospitalId) {
     try {
         const response = await fetch(`${API_BASE_URL}/hospitals/${hospitalId}/doctors`);
         const result = await response.json();
-        
+
         if (result.success) {
             return result.data;
         } else {
@@ -75,7 +78,7 @@ async function bookAppointmentAPI(appointmentData) {
             },
             body: JSON.stringify(appointmentData)
         });
-        
+
         const result = await response.json();
         return result;
     } catch (error) {
@@ -88,19 +91,19 @@ async function bookAppointmentAPI(appointmentData) {
 function getDemoHospitals() {
     return [
         {
-            _id: 1,
-            name: "Osmania General Hospital",
+            _id: "demo1",
+            name: "Demo General Hospital",
             city: "Hyderabad",
             address: "Afzalgunj, Hyderabad, Telangana 500012",
             phone: "+91 40 2345 6789",
             doctors: [
-                { name: "Dr. Rajesh Kumar", specialization: "General Medicine", experience: "15 years", available: true },
-                { name: "Dr. Priya Sharma", specialization: "Gynecology", experience: "12 years", available: true }
+                { id: 1, name: "Dr. Demo Kumar", specialization: "General Medicine", experience: "15 years", available: true },
             ],
             facilities: ["ICU", "Emergency", "Surgery"],
             rating: 4.2,
             emergency: true,
-            type: "Government"
+            type: "Government",
+            location: { coordinates: [78.4867, 17.3850] }
         }
     ];
 }
@@ -131,7 +134,7 @@ function setupHospitalDoctorDropdowns() {
     });
 }
 
-// Update modal references to match index.html
+// Modals
 function showAppointmentConfirmation(appointment) {
     const appointmentModal = document.getElementById('appointmentModal');
     const appointmentDetails = document.getElementById('appointmentDetails');
@@ -157,20 +160,54 @@ function showAppointmentConfirmation(appointment) {
 }
 
 function closeModal() {
-    const appointmentModal = document.getElementById('appointmentModal');
-    appointmentModal.style.display = 'none';
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+    });
 }
 
-// Emergency and transport stubs
-function handleEmergency() {
-    // Scroll to emergency section and highlight it
-    const emergencySection = document.getElementById('emergency');
-    if (emergencySection) {
-        emergencySection.scrollIntoView({ behavior: 'smooth' });
-        emergencySection.style.boxShadow = '0 0 20px 5px #e74c3c';
-        setTimeout(() => { emergencySection.style.boxShadow = ''; }, 2000);
+// Emergency and transport
+async function handleEmergency() {
+    if (navigator.geolocation) {
+        showLoading('emergencyHospitals', 'Getting your location and finding nearest hospital...');
+        navigator.geolocation.getCurrentPosition(
+            async function(position) {
+                const { latitude, longitude } = position.coords;
+                currentLocation = { lat: latitude, lng: longitude };
+                const response = await fetch(`${API_BASE_URL}/hospitals/emergency/nearest?lat=${latitude}&lng=${longitude}`);
+                const result = await response.json();
+                hideLoading('emergencyHospitals');
+
+                if (result.success && result.data) {
+                    const hospital = result.data;
+                    const emergencyModal = document.getElementById('emergencyModal');
+                    const emergencyDetails = document.getElementById('emergencyDetails');
+                    emergencyDetails.innerHTML = `
+                        <h3>Nearest Emergency Hospital</h3>
+                        <h4>${hospital.name}</h4>
+                        <p>${hospital.address}</p>
+                        <p><strong>Phone:</strong> ${hospital.phone}</p>
+                    `;
+                    emergencyModal.style.display = 'block';
+
+                    const callButton = emergencyModal.querySelector('.btn-emergency');
+                    callButton.onclick = () => window.location.href = `tel:${hospital.phone}`;
+                    const directionsButton = emergencyModal.querySelector('.btn-secondary');
+                    directionsButton.onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=$${hospital.location.coordinates[1]},${hospital.location.coordinates[0]}`, '_blank');
+                } else {
+                    showError('emergencyHospitals', 'Could not find a nearby emergency hospital.');
+                }
+            },
+            function(error) {
+                hideLoading('emergencyHospitals');
+                showError('emergencyHospitals', 'Could not get your location.');
+                console.error('Geolocation error:', error);
+            }
+        );
+    } else {
+        showError('emergencyHospitals', 'Geolocation is not supported by your browser.');
     }
 }
+
 function openTransport(service) {
     let url = '';
     if (service === 'ola') {
@@ -184,8 +221,8 @@ function openTransport(service) {
         window.open(url, '_blank');
     }
 }
+
 function callAmbulance() {
-    // On mobile, this will initiate a call. On desktop, it will show the number.
     if (/Mobi|Android/i.test(navigator.userAgent)) {
         window.location.href = 'tel:108';
     } else {
@@ -193,31 +230,15 @@ function callAmbulance() {
     }
 }
 
-// Smooth scroll to section by ID
+// Smooth scroll
 function scrollToSection(sectionId) {
     const section = document.getElementById(sectionId);
     if (section) {
         section.scrollIntoView({ behavior: 'smooth' });
     }
 }
-// Attach smooth scroll to nav links
-function setupNavLinks() {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href && href.startsWith('#')) {
-                e.preventDefault();
-                const sectionId = href.replace('#', '');
-                scrollToSection(sectionId);
-                navLinks.forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-            }
-        });
-    });
-}
 
-// Initialize the application
+// Initialize application
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 ApnaDr Frontend Initialized');
     
@@ -228,13 +249,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Set up event listeners
     setupEventListeners();
-    
-    // Initialize location services
-    initializeLocationServices();
-    setupNavLinks();
 });
 
-// Load hospitals
+// Load and display hospitals
 async function loadHospitals() {
     try {
         showLoading('hospitalList', 'Loading hospitals...');
@@ -248,7 +265,6 @@ async function loadHospitals() {
     }
 }
 
-// Enhanced getUserLocation for geolocation integration
 async function getUserLocation() {
     if (navigator.geolocation) {
         showLoading('hospitalList', 'Getting your location...');
@@ -256,12 +272,17 @@ async function getUserLocation() {
             async function(position) {
                 const { latitude, longitude } = position.coords;
                 currentLocation = { lat: latitude, lng: longitude };
-                console.log('📍 User location:', currentLocation);
-                // Find nearby hospitals using backend (real-time Overpass API)
+                map.setCenter(currentLocation);
+                new google.maps.Marker({
+                  position: currentLocation,
+                  map: map,
+                  title: "You are here!",
+                  icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                });
                 const nearbyHospitals = await fetchNearbyHospitals(latitude, longitude, 10);
                 if (nearbyHospitals.length > 0) {
                     displayHospitals(nearbyHospitals);
-                    showSuccess('hospitalList', `Found ${nearbyHospitals.length} hospitals near your location`);
+                    showSuccess('hospitalList', `Found ${nearbyHospitals.length} hospitals near you`);
                 } else {
                     await loadHospitals();
                     showInfo('hospitalList', 'No hospitals found nearby. Showing all hospitals.');
@@ -283,15 +304,6 @@ async function getUserLocation() {
     }
 }
 
-// Initialize location services
-function initializeLocationServices() {
-    const locationBtn = document.getElementById('locationBtn');
-    if (locationBtn) {
-        locationBtn.addEventListener('click', getUserLocation);
-    }
-}
-
-// Find nearby hospitals based on user input
 async function findNearbyHospitals() {
     const searchInput = document.getElementById('hospitalSearch');
     const searchTerm = searchInput.value.trim();
@@ -303,8 +315,6 @@ async function findNearbyHospitals() {
     
     try {
         showLoading('hospitalList', 'Searching hospitals...');
-        
-        // Try to find hospitals by city/area
         const searchResults = await fetchHospitals(searchTerm, searchTerm);
         
         if (searchResults.length > 0) {
@@ -323,14 +333,15 @@ async function findNearbyHospitals() {
     }
 }
 
-// Display hospitals
 function displayHospitals(hospitalsToShow) {
     const hospitalList = document.getElementById('hospitalList');
     if (!hospitalList) return;
     
     if (hospitalsToShow.length === 0) {
         hospitalList.innerHTML = '<div class="no-results">No hospitals found</div>';
-        if (window.updateMapMarkers) window.updateMapMarkers([]);
+        if (window.google && window.google.maps) {
+            updateMapMarkers([]);
+        }
         return;
     }
     
@@ -345,8 +356,8 @@ function displayHospitals(hospitalsToShow) {
                 <p class="hospital-address">📍 ${hospital.address}</p>
                 <p class="hospital-phone">📞 ${hospital.phone}</p>
                 <div class="hospital-rating">
-                    <span class="stars">${'★'.repeat(Math.floor(hospital.rating))}${'☆'.repeat(5-Math.floor(hospital.rating))}</span>
-                    <span class="rating-text">${hospital.rating}/5</span>
+                    <span class="stars">${'★'.repeat(Math.floor(hospital.rating || 0))}${'☆'.repeat(5-Math.floor(hospital.rating || 0))}</span>
+                    <span class="rating-text">${hospital.rating || 'N/A'}/5</span>
                 </div>
                 <div class="hospital-facilities">
                     ${hospital.facilities ? hospital.facilities.slice(0, 3).map(facility => 
@@ -355,7 +366,7 @@ function displayHospitals(hospitalsToShow) {
                 </div>
             </div>
             <div class="hospital-actions">
-                <button class="btn btn-primary" onclick="selectHospital('${hospital._id}')">
+                <button class="btn btn-primary" onclick="selectAndScrollToAppointment('${hospital._id}')">
                     Book Appointment
                 </button>
                 <button class="btn btn-secondary" onclick="viewDoctors('${hospital._id}')">
@@ -364,32 +375,36 @@ function displayHospitals(hospitalsToShow) {
             </div>
         </div>
     `).join('');
-    if (window.updateMapMarkers) window.updateMapMarkers(hospitalsToShow);
+    
+    if (window.google && window.google.maps) {
+        updateMapMarkers(hospitalsToShow);
+    }
 }
 
-// Select hospital for appointment
+async function selectAndScrollToAppointment(hospitalId) {
+    await selectHospital(hospitalId);
+    scrollToSection('appointment');
+}
+
 async function selectHospital(hospitalId) {
     try {
-        selectedHospital = hospitals.find(h => h._id === hospitalId);
+        const hospitalSelect = document.getElementById('hospitalSelect');
+        hospitalSelect.value = hospitalId;
+        
+        selectedHospital = hospitals.find(h => h._id == hospitalId);
         if (!selectedHospital) {
             showError('appointmentForm', 'Hospital not found');
             return;
         }
         
-        // Load doctors for this hospital
         doctors = await fetchDoctorsByHospital(hospitalId);
         
-        // Update appointment form
-        document.getElementById('selectedHospital').textContent = selectedHospital.name;
-        document.getElementById('appointmentForm').style.display = 'block';
-        
-        // Populate doctor dropdown
         const doctorSelect = document.getElementById('doctorSelect');
-        doctorSelect.innerHTML = '<option value="">Select a doctor</option>' +
+        doctorSelect.innerHTML = '<option value="">Choose a doctor</option>' +
             doctors.map(doctor => `
-                <option value="${doctors.indexOf(doctor)}">${doctor.name} - ${doctor.specialization} (${doctor.experience})</option>
+                <option value="${doctor.id || doctor._id || doctor.name}">${doctor.name} - ${doctor.specialization} (${doctor.experience})</option>
             `).join('');
-        
+            
         showSuccess('appointmentForm', `Selected: ${selectedHospital.name}`);
         
     } catch (error) {
@@ -398,143 +413,99 @@ async function selectHospital(hospitalId) {
     }
 }
 
-// View doctors for a hospital
 async function viewDoctors(hospitalId) {
     try {
-        const hospital = hospitals.find(h => h._id === hospitalId);
+        const hospital = hospitals.find(h => h._id == hospitalId);
         if (!hospital) {
-            showError('doctorList', 'Hospital not found');
+            alert('Hospital not found');
             return;
         }
-        
+
         const doctors = await fetchDoctorsByHospital(hospitalId);
-        
-        const doctorList = document.getElementById('doctorList');
-        if (doctorList) {
-            doctorList.innerHTML = `
-                <h3>Doctors at ${hospital.name}</h3>
-                <div class="doctor-grid">
-                    ${doctors.map(doctor => `
-                        <div class="doctor-card">
-                            <div class="doctor-info">
-                                <h4>${doctor.name}</h4>
-                                <p class="specialization">${doctor.specialization}</p>
-                                <p class="experience">Experience: ${doctor.experience}</p>
-                                <span class="availability ${doctor.available ? 'available' : 'unavailable'}">
-                                    ${doctor.available ? 'Available' : 'Unavailable'}
-                                </span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            document.getElementById('doctorModal').style.display = 'block';
+        let doctorsHtml = `<h3>Doctors at ${hospital.name}</h3>`;
+        if (doctors.length > 0) {
+            doctorsHtml += '<ul>';
+            doctors.forEach(doctor => {
+                doctorsHtml += `<li>${doctor.name} - ${doctor.specialization}</li>`;
+            });
+            doctorsHtml += '</ul>';
+        } else {
+            doctorsHtml += '<p>No doctors listed for this hospital.</p>';
         }
         
+        alert(doctorsHtml); // This can be improved with a modal
+
     } catch (error) {
         console.error('Error viewing doctors:', error);
-        showError('doctorList', 'Failed to load doctors');
+        alert('Failed to load doctors');
     }
 }
 
-// Handle appointment submission
 async function handleAppointmentSubmission(event) {
     event.preventDefault();
     
-    if (!selectedHospital) {
-        showError('appointmentForm', 'Please select a hospital first');
+    const hospitalSelect = document.getElementById('hospitalSelect');
+    if (!hospitalSelect.value) {
+        alert('Please select a hospital first');
         return;
     }
     
-    const formData = new FormData(event.target);
     const appointmentData = {
-        patientName: formData.get('patientName'),
-        patientPhone: formData.get('patientPhone'),
-        patientEmail: formData.get('patientEmail') || '',
-        hospitalId: selectedHospital._id,
-        doctorId: parseInt(formData.get('doctorSelect')),
-        appointmentDate: formData.get('appointmentDate'),
-        appointmentTime: formData.get('appointmentTime'),
-        symptoms: formData.get('symptoms') || '',
-        emergency: formData.get('emergency') === 'on'
+        patientName: document.getElementById('patientName').value,
+        patientPhone: document.getElementById('patientPhone').value,
+        patientEmail: document.getElementById('patientEmail').value || '',
+        hospitalId: hospitalSelect.value,
+        doctorId: parseInt(document.getElementById('doctorSelect').value),
+        appointmentDate: document.getElementById('appointmentDate').value,
+        appointmentTime: document.getElementById('appointmentTime').value,
+        symptoms: document.getElementById('symptoms').value || '',
     };
     
-    // Validation
     if (!appointmentData.patientName || !appointmentData.patientPhone || 
         !appointmentData.doctorId || !appointmentData.appointmentDate || !appointmentData.appointmentTime) {
-        showError('appointmentForm', 'Please fill in all required fields');
+        alert('Please fill in all required fields');
         return;
     }
     
     try {
         showLoading('appointmentForm', 'Booking appointment...');
-        
         const result = await bookAppointmentAPI(appointmentData);
+        hideLoading('appointmentForm');
         
         if (result.success) {
             showAppointmentConfirmation(result.data);
-            event.target.reset();
-            document.getElementById('appointmentForm').style.display = 'none';
+            document.getElementById('appointmentForm').reset();
         } else {
-            showError('appointmentForm', result.message || 'Failed to book appointment');
+            alert(result.message || 'Failed to book appointment');
         }
         
-        hideLoading('appointmentForm');
-        
     } catch (error) {
-        console.error('Error booking appointment:', error);
         hideLoading('appointmentForm');
-        showError('appointmentForm', 'Network error. Please try again.');
+        console.error('Error booking appointment:', error);
+        alert('Network error. Please try again.');
     }
 }
 
-// Setup event listeners
+// Event Listeners
 function setupEventListeners() {
-    // Hospital search
-    const searchInput = document.getElementById('hospitalSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(findNearbyHospitals, 500));
-    }
-    
-    // Appointment form
-    const appointmentForm = document.getElementById('appointmentForm');
-    if (appointmentForm) {
-        appointmentForm.addEventListener('submit', handleAppointmentSubmission);
-    }
-    
-    // Modal close buttons
-    const closeButtons = document.querySelectorAll('.close');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', function(event) {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
+    document.querySelector('.search-btn').addEventListener('click', findNearbyHospitals);
+    document.getElementById('locationBtn').addEventListener('click', getUserLocation);
+    document.getElementById('appointmentForm').addEventListener('submit', handleAppointmentSubmission);
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                scrollToSection(href.substring(1));
             }
         });
+    });
+    document.querySelector('.hamburger').addEventListener('click', () => {
+        document.querySelector('.nav-menu').classList.toggle('active');
     });
 }
 
 // Utility functions
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 function showLoading(elementId, message = 'Loading...') {
     const element = document.getElementById(elementId);
     if (element) {
@@ -543,38 +514,93 @@ function showLoading(elementId, message = 'Loading...') {
 }
 
 function hideLoading(elementId) {
-    // Loading will be hidden when content is loaded
+    const element = document.getElementById(elementId);
+    if(element) {
+        const loadingDiv = element.querySelector('.loading');
+        if(loadingDiv) loadingDiv.remove();
+    }
 }
 
 function showSuccess(elementId, message) {
     const element = document.getElementById(elementId);
-    if (element) {
-        const successDiv = document.createElement('div');
-        successDiv.className = 'success-message';
-        successDiv.textContent = message;
-        element.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 3000);
+    if(element) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'success-message';
+        msgDiv.textContent = message;
+        element.prepend(msgDiv);
+        setTimeout(() => msgDiv.remove(), 3000);
     }
 }
 
 function showError(elementId, message) {
     const element = document.getElementById(elementId);
-    if (element) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = message;
-        element.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+    if(element) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'error-message';
+        msgDiv.textContent = message;
+        element.prepend(msgDiv);
+        setTimeout(() => msgDiv.remove(), 5000);
     }
 }
 
 function showInfo(elementId, message) {
     const element = document.getElementById(elementId);
-    if (element) {
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'info-message';
-        infoDiv.textContent = message;
-        element.appendChild(infoDiv);
-        setTimeout(() => infoDiv.remove(), 4000);
+    if(element) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'info-message';
+        msgDiv.textContent = message;
+        element.prepend(msgDiv);
+        setTimeout(() => msgDiv.remove(), 4000);
     }
-} 
+}
+
+// Google Maps functions
+function initMap() {
+    const defaultLocation = { lat: 17.3850, lng: 78.4867 }; // Hyderabad
+    map = new google.maps.Map(document.getElementById("map-container"), {
+      zoom: 10,
+      center: defaultLocation,
+    });
+    infoWindow = new google.maps.InfoWindow();
+    getUserLocation();
+}
+
+function updateMapMarkers(hospitals) {
+    if (!map) return;
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+    
+    hospitals.forEach(hospital => {
+      if (hospital.location && hospital.location.coordinates) {
+        const [lng, lat] = hospital.location.coordinates;
+        const marker = new google.maps.Marker({
+          position: { lat: lat, lng: lng },
+          map: map,
+          title: hospital.name
+        });
+
+        marker.addListener('click', () => {
+            const content = `
+                <div>
+                    <h4>${hospital.name}</h4>
+                    <p>${hospital.address}</p>
+                    <p>${hospital.phone}</p>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}" target="_blank">Get Directions</a>
+                </div>
+            `;
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      }
+    });
+
+    if (markers.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      markers.forEach(m => bounds.extend(m.getPosition()));
+      if(currentLocation) bounds.extend(currentLocation);
+      map.fitBounds(bounds);
+    }
+}
+
+window.initMap = initMap;
