@@ -105,18 +105,133 @@ function getDemoHospitals() {
     ];
 }
 
+// Populate hospital dropdown in appointment form
+function populateHospitalDropdown() {
+    const hospitalSelect = document.getElementById('hospitalSelect');
+    if (!hospitalSelect) return;
+    hospitalSelect.innerHTML = '<option value="">Choose a hospital</option>' +
+        hospitals.map(hospital => `<option value="${hospital._id}">${hospital.name}</option>`).join('');
+}
+
+// When hospital is selected, update doctor dropdown
+function setupHospitalDoctorDropdowns() {
+    const hospitalSelect = document.getElementById('hospitalSelect');
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!hospitalSelect || !doctorSelect) return;
+    hospitalSelect.addEventListener('change', async function() {
+        const hospitalId = hospitalSelect.value;
+        if (!hospitalId) {
+            doctorSelect.innerHTML = '<option value="">Choose a doctor</option>';
+            return;
+        }
+        selectedHospital = hospitals.find(h => h._id == hospitalId);
+        doctors = await fetchDoctorsByHospital(hospitalId);
+        doctorSelect.innerHTML = '<option value="">Choose a doctor</option>' +
+            doctors.map(doctor => `<option value="${doctor.id || doctor._id || doctor.name}">${doctor.name} - ${doctor.specialization} (${doctor.experience})</option>`).join('');
+    });
+}
+
+// Update modal references to match index.html
+function showAppointmentConfirmation(appointment) {
+    const appointmentModal = document.getElementById('appointmentModal');
+    const appointmentDetails = document.getElementById('appointmentDetails');
+    appointmentDetails.innerHTML = `
+        <div class="confirmation-details">
+            <h3>✅ Appointment Confirmed!</h3>
+            <div class="confirmation-info">
+                <p><strong>Appointment ID:</strong> ${appointment.appointmentId}</p>
+                <p><strong>Patient:</strong> ${appointment.patientName}</p>
+                <p><strong>Hospital:</strong> ${appointment.hospitalName}</p>
+                <p><strong>Doctor:</strong> ${appointment.doctorName}</p>
+                <p><strong>Date:</strong> ${appointment.appointmentDate}</p>
+                <p><strong>Time:</strong> ${appointment.appointmentTime}</p>
+                ${appointment.symptoms ? `<p><strong>Symptoms:</strong> ${appointment.symptoms}</p>` : ''}
+            </div>
+            <div class="confirmation-note">
+                <p>📧 A confirmation email has been sent to your email address.</p>
+                <p>📱 Please arrive 15 minutes before your scheduled time.</p>
+            </div>
+        </div>
+    `;
+    appointmentModal.style.display = 'block';
+}
+
+function closeModal() {
+    const appointmentModal = document.getElementById('appointmentModal');
+    appointmentModal.style.display = 'none';
+}
+
+// Emergency and transport stubs
+function handleEmergency() {
+    // Scroll to emergency section and highlight it
+    const emergencySection = document.getElementById('emergency');
+    if (emergencySection) {
+        emergencySection.scrollIntoView({ behavior: 'smooth' });
+        emergencySection.style.boxShadow = '0 0 20px 5px #e74c3c';
+        setTimeout(() => { emergencySection.style.boxShadow = ''; }, 2000);
+    }
+}
+function openTransport(service) {
+    let url = '';
+    if (service === 'ola') {
+        url = 'https://book.olacabs.com/';
+    } else if (service === 'uber') {
+        url = 'https://m.uber.com/looking';
+    } else if (service === 'rapido') {
+        url = 'https://www.rapido.bike/';
+    }
+    if (url) {
+        window.open(url, '_blank');
+    }
+}
+function callAmbulance() {
+    // On mobile, this will initiate a call. On desktop, it will show the number.
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        window.location.href = 'tel:108';
+    } else {
+        alert('Call Ambulance: 108');
+    }
+}
+
+// Smooth scroll to section by ID
+function scrollToSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+// Attach smooth scroll to nav links
+function setupNavLinks() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                const sectionId = href.replace('#', '');
+                scrollToSection(sectionId);
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            }
+        });
+    });
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 ApnaDr Frontend Initialized');
     
     // Load hospitals on page load
     await loadHospitals();
+    populateHospitalDropdown();
+    setupHospitalDoctorDropdowns();
     
     // Set up event listeners
     setupEventListeners();
     
     // Initialize location services
     initializeLocationServices();
+    setupNavLinks();
 });
 
 // Load hospitals
@@ -133,30 +248,24 @@ async function loadHospitals() {
     }
 }
 
-// Get user's current location and find nearby hospitals
+// Enhanced getUserLocation for geolocation integration
 async function getUserLocation() {
     if (navigator.geolocation) {
         showLoading('hospitalList', 'Getting your location...');
-        
         navigator.geolocation.getCurrentPosition(
             async function(position) {
                 const { latitude, longitude } = position.coords;
                 currentLocation = { lat: latitude, lng: longitude };
-                
                 console.log('📍 User location:', currentLocation);
-                
-                // Find nearby hospitals
+                // Find nearby hospitals using backend (real-time Overpass API)
                 const nearbyHospitals = await fetchNearbyHospitals(latitude, longitude, 10);
-                
                 if (nearbyHospitals.length > 0) {
                     displayHospitals(nearbyHospitals);
                     showSuccess('hospitalList', `Found ${nearbyHospitals.length} hospitals near your location`);
                 } else {
-                    // Fallback to all hospitals if no nearby ones found
                     await loadHospitals();
                     showInfo('hospitalList', 'No hospitals found nearby. Showing all hospitals.');
                 }
-                
                 hideLoading('hospitalList');
             },
             function(error) {
@@ -221,6 +330,7 @@ function displayHospitals(hospitalsToShow) {
     
     if (hospitalsToShow.length === 0) {
         hospitalList.innerHTML = '<div class="no-results">No hospitals found</div>';
+        if (window.updateMapMarkers) window.updateMapMarkers([]);
         return;
     }
     
@@ -254,6 +364,7 @@ function displayHospitals(hospitalsToShow) {
             </div>
         </div>
     `).join('');
+    if (window.updateMapMarkers) window.updateMapMarkers(hospitalsToShow);
 }
 
 // Select hospital for appointment
@@ -376,33 +487,6 @@ async function handleAppointmentSubmission(event) {
         hideLoading('appointmentForm');
         showError('appointmentForm', 'Network error. Please try again.');
     }
-}
-
-// Show appointment confirmation
-function showAppointmentConfirmation(appointment) {
-    const confirmationModal = document.getElementById('confirmationModal');
-    const confirmationContent = document.getElementById('confirmationContent');
-    
-    confirmationContent.innerHTML = `
-        <div class="confirmation-details">
-            <h3>✅ Appointment Confirmed!</h3>
-            <div class="confirmation-info">
-                <p><strong>Appointment ID:</strong> ${appointment.appointmentId}</p>
-                <p><strong>Patient:</strong> ${appointment.patientName}</p>
-                <p><strong>Hospital:</strong> ${appointment.hospitalName}</p>
-                <p><strong>Doctor:</strong> ${appointment.doctorName}</p>
-                <p><strong>Date:</strong> ${appointment.appointmentDate}</p>
-                <p><strong>Time:</strong> ${appointment.appointmentTime}</p>
-                ${appointment.symptoms ? `<p><strong>Symptoms:</strong> ${appointment.symptoms}</p>` : ''}
-            </div>
-            <div class="confirmation-note">
-                <p>📧 A confirmation email has been sent to your email address.</p>
-                <p>📱 Please arrive 15 minutes before your scheduled time.</p>
-            </div>
-        </div>
-    `;
-    
-    confirmationModal.style.display = 'block';
 }
 
 // Setup event listeners
