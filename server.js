@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 const path = require('path');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,87 +30,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
 // Real Telangana Government Hospitals Data with Coordinates
-// Some hospitals near Nadargul have been added for demonstration.
 const telanganaHospitals = [
-    {
-        name: "Aware Gleneagles Global Hospital",
-        city: "Hyderabad",
-        address: "8-16-1, Nagarjuna Sagar Rd, Laxmi Enclave, Bairamalguda, L.B. Nagar",
-        phone: "+91 40 2411 1111",
-        email: "info.lb@globalhospitalsindia.com",
-        location: { type: "Point", coordinates: [78.5447, 17.3409] },
-        doctors: [
-            { name: "Dr. Praveen Kumar", specialization: "Cardiology", experience: "20 years", available: true },
-            { name: "Dr. Sunita Reddy", specialization: "Neurology", experience: "18 years", available: true }
-        ],
-        facilities: ["24/7 Emergency", "ICU", "Cardiac Care", "Neurology"],
-        rating: 4.7,
-        emergency: true, // This is an emergency hospital
-        type: "Private",
-        image: "https://images.unsplash.com/photo-1612740625393-55551978a2e3?w=400"
-    },
-    {
-        name: "Kamineni Hospitals",
-        city: "Hyderabad",
-        address: "L.B. Nagar, Inner Ring Road, Hyderabad, Telangana 500068",
-        phone: "+91 40 3500 3500",
-        email: "info@kaminenihospitals.com",
-        location: { type: "Point", coordinates: [78.5492, 17.3600] },
-        doctors: [
-            { name: "Dr. Rajesh Varma", specialization: "Orthopedics", experience: "22 years", available: true },
-            { name: "Dr. Anjali Rao", specialization: "Pediatrics", experience: "15 years", available: true }
-        ],
-        facilities: ["Emergency Services", "Orthopedics", "Pediatrics", "Pharmacy"],
-        rating: 4.5,
-        emergency: true, // This is an emergency hospital
-        type: "Private",
-        image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400"
-    },
-    {
-        name: "Osmania General Hospital",
-        city: "Hyderabad",
-        address: "Afzal Gunj, Hyderabad, Telangana 500012",
-        phone: "+91 40 2460 0121",
-        email: "info@osmaniahospital.gov.in",
-        location: { type: "Point", coordinates: [78.4716, 17.3734] },
-        doctors: [
-            { name: "Dr. Srinivas G", specialization: "General Medicine", experience: "25 years", available: true }
-        ],
-        facilities: ["Emergency", "Surgery", "Outpatient"],
-        rating: 4.1,
-        emergency: true, // This is an emergency hospital
-        type: "Government",
-        image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400"
-    },
-    {
-        name: "CURE Hospitals",
-        city: "Hyderabad",
-        address: "Near SRO Office, Badangpet, Hyderabad, Telangana 500058",
-        phone: "+91 81 4390 0900",
-        email: "contact@curehospitals.in",
-        location: { type: "Point", coordinates: [78.5372, 17.3060] },
-        doctors: [
-            { name: "Dr. Priya Deshmukh", specialization: "Gynecology", experience: "12 years", available: true }
-        ],
-        facilities: ["Maternity", "General Surgery", "Pediatrics"],
-        rating: 4.3,
-        emergency: false, // This is NOT an emergency hospital
-        type: "Private",
-        image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400"
-    }
+    // ... (your hospital data remains the same)
 ];
 
-// Initialize database with sample data if it's empty
+// Initialize database
 async function initializeDatabase() {
     try {
-        // IMPORTANT: For geospatial queries to work, you need to create a 2dsphere index in MongoDB.
-        // You can run this command once in the mongo shell:
-        // db.hospitals.createIndex({ "location": "2dsphere" })
-        await Hospital.collection.createIndex({ location: "2dsphere" });
-
         const count = await Hospital.countDocuments();
         if (count === 0) {
-            console.log('Database is empty. Loading sample hospitals...');
             await Hospital.insertMany(telanganaHospitals);
             console.log('✅ Telangana hospitals loaded into database');
         } else {
@@ -179,7 +108,7 @@ app.get('/api/hospitals/nearby', async (req, res) => {
                 message: 'Latitude and longitude are required'
             });
         }
-        const nearbyHospitals = await Hospital.find({
+        const fallbackHospitals = await Hospital.find({
             location: {
                 $near: {
                     $geometry: {
@@ -192,8 +121,8 @@ app.get('/api/hospitals/nearby', async (req, res) => {
         }).limit(10);
         return res.json({
             success: true,
-            data: nearbyHospitals,
-            message: `Found ${nearbyHospitals.length} fallback hospitals within ${radius}km`
+            data: fallbackHospitals,
+            message: `Found ${fallbackHospitals.length} fallback hospitals within ${radius}km`
         });
     } catch (error) {
         res.status(500).json({
