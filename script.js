@@ -168,76 +168,38 @@ function closeModal() {
 // Emergency and transport
 async function handleEmergency() {
     if (navigator.geolocation) {
-        showLoading('emergencyHospitals', 'Getting your location and finding the nearest hospital...');
+        showLoading('emergencyHospitals', 'Getting your location and finding nearest hospital...');
         navigator.geolocation.getCurrentPosition(
             async function(position) {
                 const { latitude, longitude } = position.coords;
                 currentLocation = { lat: latitude, lng: longitude };
+                const response = await fetch(`${API_BASE_URL}/hospitals/emergency/nearest?lat=${latitude}&lng=${longitude}`);
+                const result = await response.json();
+                hideLoading('emergencyHospitals');
 
-                try {
-                    const response = await fetch(`${API_BASE_URL}/hospitals/emergency/nearest?lat=${latitude}&lng=${longitude}`);
-                    const result = await response.json();
-                    hideLoading('emergencyHospitals');
+                if (result.success && result.data) {
+                    const hospital = result.data;
+                    const emergencyModal = document.getElementById('emergencyModal');
+                    const emergencyDetails = document.getElementById('emergencyDetails');
+                    emergencyDetails.innerHTML = `
+                        <h3>Nearest Emergency Hospital</h3>
+                        <h4>${hospital.name}</h4>
+                        <p>${hospital.address}</p>
+                        <p><strong>Phone:</strong> ${hospital.phone}</p>
+                    `;
+                    emergencyModal.style.display = 'block';
 
-                    if (result.success && result.data) {
-                        const hospital = result.data;
-                        const emergencyModal = document.getElementById('emergencyModal');
-                        const emergencyDetails = document.getElementById('emergencyDetails');
-
-                        // 1. Show the nearest hospital
-                        emergencyDetails.innerHTML = `
-                            <h3>Nearest Emergency Hospital</h3>
-                            <h4>${hospital.name}</h4>
-                            <p>${hospital.address}</p>
-                            <p><strong>Phone:</strong> ${hospital.phone}</p>
-                            <div id="ambulanceStatus" class="info-message" style="display: none;"></div>
-                        `;
-                        emergencyModal.style.display = 'block';
-
-                        const callButton = emergencyModal.querySelector('.btn-emergency');
-                        callButton.onclick = () => window.location.href = `tel:${hospital.phone}`;
-                        const directionsButton = emergencyModal.querySelector('.btn-secondary');
-                        // Corrected Google Maps URL
-                        directionsButton.onclick = () => window.open(`https://maps.google.com/?q=${hospital.location.coordinates[1]},${hospital.location.coordinates[0]}`, '_blank');
-
-
-                        // 2. Simulate ambulance call and show ETA
-                        const ambulanceStatus = document.getElementById('ambulanceStatus');
-                        ambulanceStatus.style.display = 'block';
-                        let eta = 120; // 2 minutes for demo
-                        ambulanceStatus.innerHTML = `Ambulance dispatched! Arriving in <span id="etaTime">${eta}</span> seconds.`;
-                        const etaTimeElement = document.getElementById('etaTime');
-
-                        const etaInterval = setInterval(() => {
-                            eta--;
-                            etaTimeElement.textContent = eta;
-                            if (eta <= 0) {
-                                clearInterval(etaInterval);
-                                ambulanceStatus.innerHTML = "Ambulance has arrived!";
-                            }
-                        }, 1000);
-
-                        // 3. Set a timeout for cab booking if ambulance is late
-                        setTimeout(() => {
-                            if (eta > 0) { // If ambulance hasn't arrived
-                                clearInterval(etaInterval);
-                                ambulanceStatus.innerHTML = "Ambulance is delayed. Booking a cab for you...";
-                                bookCab(hospital);
-                            }
-                        }, 125000); // 2 minutes 5 seconds for demo
-
-                    } else {
-                        showError('emergencyHospitals', 'Could not find a nearby emergency hospital.');
-                    }
-                } catch (error) {
-                    hideLoading('emergencyHospitals');
+                    const callButton = emergencyModal.querySelector('.btn-emergency');
+                    callButton.onclick = () => window.location.href = `tel:${hospital.phone}`;
+                    const directionsButton = emergencyModal.querySelector('.btn-secondary');
+                    directionsButton.onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=$${hospital.location.coordinates[1]},${hospital.location.coordinates[0]}`, '_blank');
+                } else {
                     showError('emergencyHospitals', 'Could not find a nearby emergency hospital.');
-                    console.error('Error fetching nearest hospital:', error);
                 }
             },
             function(error) {
                 hideLoading('emergencyHospitals');
-                showError('emergencyHospitals', 'Could not get your location. Please enable location services.');
+                showError('emergencyHospitals', 'Could not get your location.');
                 console.error('Geolocation error:', error);
             }
         );
@@ -245,25 +207,6 @@ async function handleEmergency() {
         showError('emergencyHospitals', 'Geolocation is not supported by your browser.');
     }
 }
-
-// NEW: Function to book a cab
-function bookCab(hospital) {
-    const services = [
-        { name: 'Ola', url: 'https://book.olacabs.com/' },
-        { name: 'Uber', url: 'https://m.uber.com/looking' },
-        { name: 'Rapido', url: 'https://www.rapido.bike/' }
-    ];
-    const selectedService = services[Math.floor(Math.random() * services.length)];
-
-    const ambulanceStatus = document.getElementById('ambulanceStatus');
-    ambulanceStatus.innerHTML += `<br>Booking a ${selectedService.name}...`;
-
-    setTimeout(() => {
-        window.open(selectedService.url, '_blank');
-        alert(`Redirecting to ${selectedService.name} to book a ride to ${hospital.name}.`);
-    }, 2000);
-}
-
 
 function openTransport(service) {
     let url = '';
@@ -334,7 +277,7 @@ async function getUserLocation() {
                   position: currentLocation,
                   map: map,
                   title: "You are here!",
-                  icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                  icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                 });
                 const nearbyHospitals = await fetchNearbyHospitals(latitude, longitude, 10);
                 if (nearbyHospitals.length > 0) {
@@ -612,4 +555,52 @@ function showInfo(elementId, message) {
 }
 
 // Google Maps functions
-function initMap()
+function initMap() {
+    const defaultLocation = { lat: 17.3850, lng: 78.4867 }; // Hyderabad
+    map = new google.maps.Map(document.getElementById("map-container"), {
+      zoom: 10,
+      center: defaultLocation,
+    });
+    infoWindow = new google.maps.InfoWindow();
+    getUserLocation();
+}
+
+function updateMapMarkers(hospitals) {
+    if (!map) return;
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+    
+    hospitals.forEach(hospital => {
+      if (hospital.location && hospital.location.coordinates) {
+        const [lng, lat] = hospital.location.coordinates;
+        const marker = new google.maps.Marker({
+          position: { lat: lat, lng: lng },
+          map: map,
+          title: hospital.name
+        });
+
+        marker.addListener('click', () => {
+            const content = `
+                <div>
+                    <h4>${hospital.name}</h4>
+                    <p>${hospital.address}</p>
+                    <p>${hospital.phone}</p>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}" target="_blank">Get Directions</a>
+                </div>
+            `;
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+        });
+        markers.push(marker);
+      }
+    });
+
+    if (markers.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      markers.forEach(m => bounds.extend(m.getPosition()));
+      if(currentLocation) bounds.extend(currentLocation);
+      map.fitBounds(bounds);
+    }
+}
+
+window.initMap = initMap;
