@@ -4,14 +4,15 @@ const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
+const path = require('path');
+const fetch = require('node-fetch'); // Add at the top if not present
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/apnadr', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+mongoose.connect('mongodb+srv://MohdJaser:MohdJaser00001@cluster0.qtcwhq2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+    // Replace <db_password> with your actual MongoDB Atlas password
 }).then(() => {
     console.log('✅ Connected to MongoDB');
 }).catch(err => {
@@ -27,6 +28,7 @@ const Appointment = require('./models/Appointment');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname)));
 
 // Real Telangana Government Hospitals Data with Coordinates
 const telanganaHospitals = [
@@ -245,15 +247,42 @@ app.get('/api/hospitals', async (req, res) => {
 app.get('/api/hospitals/nearby', async (req, res) => {
     try {
         const { lat, lng, radius = 10 } = req.query; // radius in km
-        
         if (!lat || !lng) {
             return res.status(400).json({
                 success: false,
                 message: 'Latitude and longitude are required'
             });
         }
-
-        const hospitals = await Hospital.find({
+        // Use Overpass API for real-time hospital search
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=hospital](around:${radius * 1000},${lat},${lng});out;`;
+        const response = await fetch(overpassUrl);
+        const data = await response.json();
+        if (data && data.elements && data.elements.length > 0) {
+            // Map to hospital format and limit to 5
+            const hospitals = data.elements.slice(0, 5).map((el, idx) => ({
+                _id: el.id,
+                name: el.tags && el.tags.name ? el.tags.name : `Hospital #${idx + 1}`,
+                address: el.tags && el.tags['addr:full'] ? el.tags['addr:full'] : `${el.tags['addr:street'] || ''} ${el.tags['addr:city'] || ''}`.trim(),
+                city: el.tags && el.tags['addr:city'] ? el.tags['addr:city'] : '',
+                phone: el.tags && el.tags.phone ? el.tags.phone : '',
+                facilities: [],
+                rating: 4.0,
+                emergency: true,
+                type: 'Unknown',
+                location: {
+                    type: 'Point',
+                    coordinates: [el.lon, el.lat]
+                },
+                image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400'
+            }));
+            return res.json({
+                success: true,
+                data: hospitals,
+                message: `Found ${hospitals.length} real hospitals within ${radius}km`
+            });
+        }
+        // Fallback to local DB if Overpass returns nothing
+        const fallbackHospitals = await Hospital.find({
             location: {
                 $near: {
                     $geometry: {
@@ -263,12 +292,11 @@ app.get('/api/hospitals/nearby', async (req, res) => {
                     $maxDistance: radius * 1000 // Convert km to meters
                 }
             }
-        }).limit(10);
-
-        res.json({
+        }).limit(5);
+        return res.json({
             success: true,
-            data: hospitals,
-            message: `Found ${hospitals.length} hospitals within ${radius}km`
+            data: fallbackHospitals,
+            message: `Found ${fallbackHospitals.length} fallback hospitals within ${radius}km`
         });
     } catch (error) {
         res.status(500).json({
