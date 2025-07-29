@@ -168,38 +168,76 @@ function closeModal() {
 // Emergency and transport
 async function handleEmergency() {
     if (navigator.geolocation) {
-        showLoading('emergencyHospitals', 'Getting your location and finding nearest hospital...');
+        showLoading('emergencyHospitals', 'Getting your location and finding the nearest hospital...');
         navigator.geolocation.getCurrentPosition(
             async function(position) {
                 const { latitude, longitude } = position.coords;
                 currentLocation = { lat: latitude, lng: longitude };
-                const response = await fetch(`${API_BASE_URL}/hospitals/emergency/nearest?lat=${latitude}&lng=${longitude}`);
-                const result = await response.json();
-                hideLoading('emergencyHospitals');
 
-                if (result.success && result.data) {
-                    const hospital = result.data;
-                    const emergencyModal = document.getElementById('emergencyModal');
-                    const emergencyDetails = document.getElementById('emergencyDetails');
-                    emergencyDetails.innerHTML = `
-                        <h3>Nearest Emergency Hospital</h3>
-                        <h4>${hospital.name}</h4>
-                        <p>${hospital.address}</p>
-                        <p><strong>Phone:</strong> ${hospital.phone}</p>
-                    `;
-                    emergencyModal.style.display = 'block';
+                try {
+                    const response = await fetch(`${API_BASE_URL}/hospitals/emergency/nearest?lat=${latitude}&lng=${longitude}`);
+                    const result = await response.json();
+                    hideLoading('emergencyHospitals');
 
-                    const callButton = emergencyModal.querySelector('.btn-emergency');
-                    callButton.onclick = () => window.location.href = `tel:${hospital.phone}`;
-                    const directionsButton = emergencyModal.querySelector('.btn-secondary');
-                    directionsButton.onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=$${hospital.location.coordinates[1]},${hospital.location.coordinates[0]}`, '_blank');
-                } else {
+                    if (result.success && result.data) {
+                        const hospital = result.data;
+                        const emergencyModal = document.getElementById('emergencyModal');
+                        const emergencyDetails = document.getElementById('emergencyDetails');
+
+                        // 1. Show the nearest hospital
+                        emergencyDetails.innerHTML = `
+                            <h3>Nearest Emergency Hospital</h3>
+                            <h4>${hospital.name}</h4>
+                            <p>${hospital.address}</p>
+                            <p><strong>Phone:</strong> ${hospital.phone}</p>
+                            <div id="ambulanceStatus" class="info-message" style="display: none;"></div>
+                        `;
+                        emergencyModal.style.display = 'block';
+
+                        const callButton = emergencyModal.querySelector('.btn-emergency');
+                        callButton.onclick = () => window.location.href = `tel:${hospital.phone}`;
+                        const directionsButton = emergencyModal.querySelector('.btn-secondary');
+                        
+                        directionsButton.onclick = () => window.open(`https://www.google.com/maps/search/?api=1&query=${hospital.location.coordinates[1]},${hospital.location.coordinates[0]}`, '_blank');
+
+
+                        // 2. Simulate ambulance call and show ETA
+                        const ambulanceStatus = document.getElementById('ambulanceStatus');
+                        ambulanceStatus.style.display = 'block';
+                        let eta = 120; // 2 minutes for demo
+                        ambulanceStatus.innerHTML = `Ambulance dispatched! Arriving in <span id="etaTime">${eta}</span> seconds.`;
+                        const etaTimeElement = document.getElementById('etaTime');
+
+                        const etaInterval = setInterval(() => {
+                            eta--;
+                            etaTimeElement.textContent = eta;
+                            if (eta <= 0) {
+                                clearInterval(etaInterval);
+                                ambulanceStatus.innerHTML = "Ambulance has arrived!";
+                            }
+                        }, 1000);
+
+                        // 3. Set a timeout for cab booking if ambulance is late
+                        setTimeout(() => {
+                            if (eta > 0) { // If ambulance hasn't arrived
+                                clearInterval(etaInterval);
+                                ambulanceStatus.innerHTML = "Ambulance is delayed. Booking a cab for you...";
+                                bookCab(hospital);
+                            }
+                        }, 125000); // 2 minutes 5 seconds for demo
+
+                    } else {
+                        showError('emergencyHospitals', 'Could not find a nearby emergency hospital.');
+                    }
+                } catch (error) {
+                    hideLoading('emergencyHospitals');
                     showError('emergencyHospitals', 'Could not find a nearby emergency hospital.');
+                    console.error('Error fetching nearest hospital:', error);
                 }
             },
             function(error) {
                 hideLoading('emergencyHospitals');
-                showError('emergencyHospitals', 'Could not get your location.');
+                showError('emergencyHospitals', 'Could not get your location. Please enable location services.');
                 console.error('Geolocation error:', error);
             }
         );
@@ -207,6 +245,25 @@ async function handleEmergency() {
         showError('emergencyHospitals', 'Geolocation is not supported by your browser.');
     }
 }
+
+// NEW: Function to book a cab
+function bookCab(hospital) {
+    const services = [
+        { name: 'Ola', url: 'https://book.olacabs.com/' },
+        { name: 'Uber', url: 'https://m.uber.com/looking' },
+        { name: 'Rapido', url: 'https://www.rapido.bike/' }
+    ];
+    const selectedService = services[Math.floor(Math.random() * services.length)];
+
+    const ambulanceStatus = document.getElementById('ambulanceStatus');
+    ambulanceStatus.innerHTML += `<br>Booking a ${selectedService.name}...`;
+
+    setTimeout(() => {
+        window.open(selectedService.url, '_blank');
+        alert(`Redirecting to ${selectedService.name} to book a ride to ${hospital.name}.`);
+    }, 2000);
+}
+
 
 function openTransport(service) {
     let url = '';
@@ -242,12 +299,12 @@ function scrollToSection(sectionId) {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 ApnaDr Frontend Initialized');
     
-    // Load hospitals on page load
+    
     await loadHospitals();
     populateHospitalDropdown();
     setupHospitalDoctorDropdowns();
     
-    // Set up event listeners
+    
     setupEventListeners();
 });
 
@@ -277,7 +334,6 @@ async function getUserLocation() {
                   position: currentLocation,
                   map: map,
                   title: "You are here!",
-                  icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                 });
                 const nearbyHospitals = await fetchNearbyHospitals(latitude, longitude, 10);
                 if (nearbyHospitals.length > 0) {
@@ -349,7 +405,7 @@ function displayHospitals(hospitalsToShow) {
         <div class="hospital-card" data-hospital-id="${hospital._id}">
             <div class="hospital-image">
                 <img src="${hospital.image || 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400'}" alt="${hospital.name}">
-                ${hospital.emergency ? '<span class="emergency-badge">Emergency</span>' : ''}
+                ${hospital.emergency ? `<span class="emergency-badge">Emergency</span>` : ''}
             </div>
             <div class="hospital-info">
                 <h3>${hospital.name}</h3>
@@ -453,6 +509,7 @@ async function handleAppointmentSubmission(event) {
     const appointmentData = {
         patientName: document.getElementById('patientName').value,
         patientPhone: document.getElementById('patientPhone').value,
+        patientGender: document.getElementById('patientGender').value,
         patientEmail: document.getElementById('patientEmail').value || '',
         hospitalId: hospitalSelect.value,
         doctorId: parseInt(document.getElementById('doctorSelect').value),
@@ -461,7 +518,7 @@ async function handleAppointmentSubmission(event) {
         symptoms: document.getElementById('symptoms').value || '',
     };
     
-    if (!appointmentData.patientName || !appointmentData.patientPhone || 
+    if (!appointmentData.patientName || !appointmentData.patientPhone || !appointmentData.patientGender ||
         !appointmentData.doctorId || !appointmentData.appointmentDate || !appointmentData.appointmentTime) {
         alert('Please fill in all required fields');
         return;
@@ -585,7 +642,7 @@ function updateMapMarkers(hospitals) {
                     <h4>${hospital.name}</h4>
                     <p>${hospital.address}</p>
                     <p>${hospital.phone}</p>
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}" target="_blank">Get Directions</a>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank">Get Directions</a>
                 </div>
             `;
             infoWindow.setContent(content);
