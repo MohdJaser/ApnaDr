@@ -9,75 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-heartbeat"></i>
-                <span>ApnaDr</span>
-            </div>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="#home" class="nav-link active">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#hospitals" class="nav-link">Find Hospital</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#appointment" class="nav-link">Book Appointment</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#emergency" class="nav-link">Emergency</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#transport" class="nav-link">Transport</a>
-                </li>
-            </ul>
-            <div class="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </nav>
-
-    <section id="home" class="hero">
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1>Your Nearby Medical Access in Emergencies</h1>
-                <p>Find hospitals, book appointments, and get emergency transport assistance - all in one place.</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-primary" onclick="scrollToSection('hospitals')">
-                        <i class="fas fa-hospital"></i> Find Hospitals
-                    </button>
-                    <button class="btn btn-secondary" onclick="scrollToSection('emergency')">
-                        <i class="fas fa-ambulance"></i> Emergency Help
-                    </button>
-                </div>
-            </div>
-            <div class="hero-image">
-                <i class="fas fa-user-md"></i>
-            </div>
-        </div>
-    </section>
-
-    <section id="hospitals" class="hospitals-section">
-        <div class="container">
-            <h2>Nearby Hospitals</h2>
-            <div id="map-container" style="height: 400px; width: 100%; margin-bottom: 20px;"></div>
-            <div class="search-container">
-                <input type="text" id="hospitalSearch" placeholder="Enter city or area (e.g., Hyderabad, Warangal, Jubilee Hills)" class="search-input">
-                <button onclick="findNearbyHospitals()" class="search-btn">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <button id="locationBtn" class="btn btn-secondary">
-                    <i class="fas fa-location-arrow"></i> Use My Location
-                </button>
-            </div>
-            <div class="hospitals-grid" id="hospitalList">
-                </div>
-        </div>
-    </section>
-
     <section id="appointment" class="appointment-section">
         <div class="container">
             <h2>Book Appointment</h2>
@@ -90,6 +21,15 @@
                     <div class="form-group">
                         <label for="patientPhone">Phone Number</label>
                         <input type="tel" id="patientPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientGender">Gender</label>
+                        <select id="patientGender" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="patientEmail">Email Address (Optional)</label>
@@ -133,142 +73,18 @@
             </div>
         </div>
     </section>
-
-    <section id="emergency" class="emergency-section">
-        <div class="container">
-            <h2>Emergency Assistance</h2>
-            <div class="emergency-alert">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Need Immediate Help?</h3>
-                <p>We'll find the nearest hospitals and transport options for you.</p>
-                <button onclick="handleEmergency()" class="btn btn-emergency">
-                    <i class="fas fa-ambulance"></i> Get Emergency Help
-                </button>
-            </div>
-            <div class="emergency-hospitals" id="emergencyHospitals">
-                </div>
-        </div>
-    </section>
-
-    <section id="transport" class="transport-section">
-        <div class="container">
-            <h2>Transport Services</h2>
-            <p class="section-subtitle">Get quick transport to hospitals when ambulances are stuck in traffic</p>
-            <div class="transport-grid">
-                <div class="transport-card">
-                    <div class="transport-icon">
-                        <i class="fas fa-car"></i>
-                    </div>
-                    <h3>Ola</h3>
-                    <p>Quick ride to hospitals</p>
-                    <button onclick="openTransport('ola')" class="btn btn-transport">
-                        Book Ola
-                    </button>
-                </div>
-                <div class="transport-card">
-                    <div class="transport-icon">
-                        <i class="fas fa-car-side"></i>
-                    </div>
-                    <h3>Uber</h3>
-                    <p>Reliable transport service</p>
-                    <button onclick="openTransport('uber')" class="btn btn-transport">
-                        Book Uber
-                    </button>
-                </div>
-                <div class="transport-card">
-                    <div class="transport-icon">
-                        <i class="fas fa-motorcycle"></i>
-                    </div>
-                    <h3>Rapido</h3>
-                    <p>Fast bike rides</p>
-                    <button onclick="openTransport('rapido')" class="btn btn-transport">
-                        Book Rapido
-                    </button>
-                </div>
-                <div class="transport-card">
-                    <div class="transport-icon">
-                        <i class="fas fa-ambulance"></i>
-                    </div>
-                    <h3>Ambulance</h3>
-                    <p>Emergency medical transport</p>
-                    <button onclick="callAmbulance()" class="btn btn-transport emergency">
-                        Call Ambulance
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>ApnaDr</h3>
-                    <p>Your trusted partner for medical emergencies and healthcare access.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#hospitals">Find Hospital</a></li>
-                        <li><a href="#appointment">Book Appointment</a></li>
-                        <li><a href="#emergency">Emergency</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Emergency Numbers</h4>
-                    <ul>
-                        <li>Ambulance: 108</li>
-                        <li>Police: 100</li>
-                        <li>Fire: 101</li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <p>Email: info@medireach.com</p>
-                    <p>Phone: +91 98765 43210</p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>© 2024 ApnaDr. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <div id="appointmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <div class="modal-body">
-                <i class="fas fa-check-circle success-icon"></i>
-                <h3>Appointment Booked Successfully!</h3>
-                <div id="appointmentDetails"></div>
-                <button onclick="closeModal()" class="btn btn-primary">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="emergencyModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <div class="modal-body">
-                <i class="fas fa-exclamation-triangle emergency-icon"></i>
-                <h3>Emergency Assistance</h3>
-                <div id="emergencyDetails"></div>
-                <div class="emergency-actions">
-                    <button class="btn btn-emergency">
-                        <i class="fas fa-phone"></i> Call Emergency
-                    </button>
-                    <button class="btn btn-secondary">
-                        <i class="fas fa-map-marker-alt"></i> Get Directions
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-    <script async defer
-      src="https://maps.googleapis.com/maps/api/js?AIzaSyDVGEKOBFDjiPrbrx6ILFPUIeeF_Sh4kjQ&callback=initMap">
+    <script>
+        // Set the minimum date for the appointment to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('appointmentDate');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.setAttribute('min', today);
+            }
+        });
     </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+    <script src="script.js"></script>
+
 </body>
 </html>
