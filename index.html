@@ -122,7 +122,18 @@
                     </div>
                     <div class="form-group">
                         <label for="appointmentTime">Preferred Time</label>
-                        <input type="time" id="appointmentTime" required>
+                        <input type="text" id="appointmentTime" list="time-options" required>
+                        <datalist id="time-options">
+                            <option value="09:00 AM"></option>
+                            <option value="10:00 AM"></option>
+                            <option value="11:00 AM"></option>
+                            <option value="12:00 PM"></option>
+                            <option value="01:00 PM"></option>
+                            <option value="02:00 PM"></option>
+                            <option value="03:00 PM"></option>
+                            <option value="04:00 PM"></option>
+                            <option value="05:00 PM"></option>
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label for="symptoms">Symptoms/Reason</label>
@@ -246,7 +257,7 @@
 
     <div id="appointmentModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
+            <span class="close" onclick="closeModal()">×</span>
             <div class="modal-body">
                 <i class="fas fa-check-circle success-icon"></i>
                 <h3>Appointment Booked Successfully!</h3>
@@ -258,7 +269,7 @@
 
     <div id="emergencyModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
+            <span class="close" onclick="closeModal()">×</span>
             <div class="modal-body">
                 <i class="fas fa-exclamation-triangle emergency-icon"></i>
                 <h3>Emergency Assistance</h3>
@@ -276,7 +287,7 @@
     </div>
     
     <script>
-        // Set the minimum date for the appointment to today
+        
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('appointmentDate');
             if (dateInput) {
