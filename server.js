@@ -250,7 +250,7 @@ app.post('/api/appointments', async (req, res) => {
             patientGender,
             patientEmail,
             hospitalId,
-            doctorId,
+            doctorId: parseInt(doctorId),
             hospitalName: hospital.name,
             doctorName: doctor.name,
             doctorSpecialization: doctor.specialization,
